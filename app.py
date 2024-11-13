@@ -65,6 +65,16 @@ else:
 
 
 def get_code_group(llm_response: str) -> str | bool:
+    """Extracts Python code from a markdown-formatted LLM response.
+
+    Args:
+        llm_response: A string containing the full response from the LLM, potentially
+            containing Python code blocks.
+
+    Returns:
+        str: The extracted Python code if found.
+        bool: False if no Python code block is found.
+    """
     code_match = re.search(r"```python\n(.*?)```", llm_response, re.DOTALL)
     print(">>> Code Match: ", code_match)
     if not code_match:
@@ -75,6 +85,24 @@ def get_code_group(llm_response: str) -> str | bool:
 
 
 def execute_local(temp_file_path: str) -> str:
+    """Executes a Python script locally and returns its output.
+
+    Runs the given Python script file using python3.10 interpreter in a subprocess
+    with a x second timeout. Captures and returns stdout/stderr.
+
+    Args:
+        temp_file_path: Path to the temporary Python script file to execute.
+
+    Returns:
+        str: The stdout output if execution was successful, stderr if there were errors,
+            or a timeout message if execution exceeded 10 seconds.
+
+    Raises:
+        subprocess.TimeoutExpired: If script execution takes longer than 10 seconds.
+
+    Note:
+        The temporary file is deleted after execution regardless of success/failure.
+    """
     try:
         result = subprocess.run(
             ["python3.10", temp_file_path], capture_output=True, text=True, timeout=10
@@ -88,6 +116,25 @@ def execute_local(temp_file_path: str) -> str:
 
 
 def execute_docker(temp_file_path: str) -> str:
+    """Executes a Python script in a Docker container and returns its output.
+
+    Runs the given Python script file in a Docker container using the code-interpreter-demo
+    image. Mounts the temporary script directory into the container and executes the script.
+
+    Args:
+        temp_file_path: Path to the temporary Python script file to execute.
+
+    Returns:
+        str: The stdout output from the container if execution was successful,
+            or an error message if container execution failed.
+
+    Raises:
+        Exception: If there are any errors running the Docker container.
+
+    Note:
+        The temporary file is deleted after execution regardless of success/failure.
+        The container is automatically removed after execution.
+    """
     client = docker.from_env()
     try:
         container = client.containers.run(
